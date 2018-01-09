@@ -1,0 +1,22 @@
+{
+  "extends": "airbnb",
+  "plugins": ["jasmine"],
+  "env": {
+    "jasmine": true
+  },
+  "rules": {
+    "no-plusplus": ["error", {
+      "allowForLoopAfterthoughts": true
+    }],
+    "max-len": ["error", 200, 2, {
+      "ignoreUrls": true,
+      "ignoreComments": false,
+      "ignoreRegExpLiterals": true,
+      "ignoreStrings": true,
+      "ignoreTemplateLiterals": true
+    }],
+    "no-underscore-dangle": ["error", {
+      "allow": ["_id"]
+    }]
+  }
+}
