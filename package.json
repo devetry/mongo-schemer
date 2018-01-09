@@ -1,7 +1,7 @@
 {
   "name": "mongo-schemer",
   "version": "1.0.0",
-  "description": "Explains Mongo 3.6 JSON Schema validation errors",
+  "description": "Detailed schema validation error messages for Mongo",
   "main": "index.js",
   "scripts": {
     "lint": "./node_modules/eslint/bin/eslint.js .",
@@ -15,7 +15,15 @@
     "Allan Wintersieck <allan@devetry.com> (https://devetry.com)",
     "Brian Schiller <brian@devetry.com> (https://devetry.com)"
   ],
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devetry/mongo-schemer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devetry/mongo-schemer/issues"
+  },
+  "homepage": "https://github.com/devetry/mongo-schemer#readme",
   "devDependencies": {
     "eslint": "^4.15.0",
     "eslint-config-airbnb": "^16.1.0",
