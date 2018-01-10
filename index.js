@@ -3,6 +3,16 @@ const Ajv = require('ajv');
 const AjvKeywords = require('ajv-keywords');
 const MongoMock = require('mongo-mock');
 
+const ajv = new Ajv();
+AjvKeywords(ajv, 'instanceof');
+// add special test for { objectid: true } in schema
+ajv.addKeyword(
+  'objectid',
+  // eslint-disable-next-line
+  { validate: (schema, data) => data._bsontype === 'ObjectID' },
+);
+
+
 const MongoMockUrl = 'mongodb://localhost:27017/mongo-schemer';
 let db;
 let schemaErrorCallback;
@@ -28,7 +38,8 @@ const convertMongoSchemaToJsonSchema = (incomingSchema) => {
     delete schema.bsonType;
   }
   if (schema.type === 'objectId') {
-    schema.type = 'object';
+    delete schema.type;
+    schema.objectid = true;
   }
   if (schema.type === 'date') {
     delete schema.type;
@@ -48,8 +59,6 @@ const convertMongoSchemaToJsonSchema = (incomingSchema) => {
 };
 
 const explainValidationError = async (collectionName, { doc, err }) => {
-  const ajv = new Ajv({ $data: true });
-  AjvKeywords(ajv);
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
   const schema = convertMongoSchemaToJsonSchema(collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema);
   if (!doc && err) {
