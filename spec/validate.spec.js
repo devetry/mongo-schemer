@@ -2,7 +2,7 @@ const { MongoClient } = require('mongodb');
 
 const MongoSchemer = require('../index.js');
 
-const dbUrl = 'mongodb://localhost:27017/';
+const dbUrl = `mongodb://localhost:${process.env.MONGO_PORT || 27017}/`;
 const dbName = 'mongo-schemer';
 const collectionName = 'test';
 let client;
