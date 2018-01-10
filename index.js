@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const { ObjectID } = require('mongodb');
 const Ajv = require('ajv');
 const AjvKeywords = require('ajv-keywords');
 const MongoMock = require('mongo-mock');
@@ -10,6 +9,18 @@ let schemaErrorCallback;
 
 MongoMock.max_delay = 0;
 
+const convertObjectIDsToStrings = (value) => {
+  // Check if this is an ObjectID
+  if (value.toHexString && value.getTimestamp) {
+    return value.toHexString();
+  } else if (_.isObject(value)) {
+    return _.mapValues(value, convertObjectIDsToStrings);
+  } else if (_.isArray(value)) {
+    return _.map(value, convertObjectIDsToStrings);
+  }
+  return value;
+};
+
 const convertMongoSchemaToJsonSchema = (incomingSchema) => {
   const schema = incomingSchema;
   if (schema.bsonType && !schema.type) {
@@ -17,8 +28,7 @@ const convertMongoSchemaToJsonSchema = (incomingSchema) => {
     delete schema.bsonType;
   }
   if (schema.type === 'objectId') {
-    delete schema.type;
-    schema.instanceof = 'ObjectID';
+    schema.type = 'object';
   }
   if (schema.type === 'date') {
     delete schema.type;
@@ -40,8 +50,6 @@ const convertMongoSchemaToJsonSchema = (incomingSchema) => {
 const explainValidationError = async (collectionName, { doc, err }) => {
   const ajv = new Ajv({ $data: true });
   AjvKeywords(ajv);
-  const instanceofDefinition = AjvKeywords.get('instanceof').definition;
-  instanceofDefinition.CONSTRUCTORS.ObjectID = ObjectID;
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
   const schema = convertMongoSchemaToJsonSchema(collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema);
   if (!doc && err) {
@@ -84,13 +92,16 @@ const explainSchemaErrors = (incomingDb) => {
         throw err;
       }
     };
-    col.updateOne = async function replacementUpdateOne(...uoArgs) {
+    col.updateOne = async function replacementUpdateOne(...uoArgsIncoming) {
+      const uoArgs = uoArgsIncoming;
       try {
         return await originalUpdateOne.call(this, ...uoArgs);
       } catch (err) {
         if (err && err.code === 121) {
           // Get doc we're trying to update
           const currentDoc = await col.findOne(uoArgs[0]);
+          // Remove ObjectIDs from filters
+          uoArgs[0] = convertObjectIDsToStrings(uoArgs[0]);
           // Load current doc into mock mongo
           const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
           const mockCol = mockDb.collection('mock');
@@ -109,13 +120,16 @@ const explainSchemaErrors = (incomingDb) => {
         throw err;
       }
     };
-    col.updateMany = async function replacementUpdateMany(...umArgs) {
+    col.updateMany = async function replacementUpdateMany(...umArgsIncoming) {
+      const umArgs = umArgsIncoming;
       try {
         return await originalUpdateMany.call(this, ...umArgs);
       } catch (err) {
         if (err && err.code === 121) {
           // Get docs we're trying to update
           const currentDocs = await col.find(umArgs[0]).toArray();
+          // Remove ObjectIDs from filters
+          umArgs[0] = convertObjectIDsToStrings(umArgs[0]);
           // Load current docs into mock mongo
           const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
           const mockCol = mockDb.collection('mock');
