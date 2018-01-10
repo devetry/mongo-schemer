@@ -4,8 +4,6 @@ const AjvKeywords = require('ajv-keywords');
 const MongoMock = require('mongo-mock');
 
 const MongoMockUrl = 'mongodb://localhost:27017/mongo-schemer';
-let db;
-let schemaErrorCallback;
 
 MongoMock.max_delay = 0;
 
@@ -47,7 +45,7 @@ const convertMongoSchemaToJsonSchema = (incomingSchema) => {
   return schema;
 };
 
-const explainValidationError = async (collectionName, { doc, err }) => {
+const validationErrors = async (db, collectionName, { doc, err }) => {
   const ajv = new Ajv({ $data: true });
   AjvKeywords(ajv);
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
@@ -56,14 +54,21 @@ const explainValidationError = async (collectionName, { doc, err }) => {
     doc = err.getOperation(); // eslint-disable-line no-param-reassign
   }
   const valid = ajv.validate(schema, doc);
-  if (!valid && schemaErrorCallback) {
-    schemaErrorCallback(ajv.errors);
-  }
-  return true;
+  return { valid, errors: ajv.errors };
 };
 
-const explainSchemaErrors = (incomingDb) => {
-  db = incomingDb;
+const explainSchemaErrors = (incomingDb, options = {}) => {
+  const db = incomingDb;
+  const { onError } = options;
+  if (onError) {
+    db.onValidationError = onError;
+  }
+  const explainValidationError = async (...args) => {
+    const { valid, errors } = await validationErrors(...args);
+    if (!valid) {
+      db.onValidationError(errors);
+    }
+  };
   const originalCollection = db.collection;
   db.collection = function replacementCollection(...args) {
     const collectionName = args[0];
@@ -77,7 +82,7 @@ const explainSchemaErrors = (incomingDb) => {
         return await originalInsertOne.call(this, ...ioArgs);
       } catch (err) {
         if (err && err.code === 121) {
-          explainValidationError(collectionName, { doc: ioArgs[0] });
+          explainValidationError(db, collectionName, { doc: ioArgs[0] });
         }
         throw err;
       }
@@ -87,7 +92,7 @@ const explainSchemaErrors = (incomingDb) => {
         return await originalInsertMany.call(this, ...imArgs);
       } catch (err) {
         if (err && err.code === 121) {
-          explainValidationError(collectionName, { err });
+          explainValidationError(db, collectionName, { err });
         }
         throw err;
       }
@@ -113,7 +118,7 @@ const explainSchemaErrors = (incomingDb) => {
           // mongo-mock changes how an _id looks, change it back
           doc._id = currentDoc._id;
           // Explain schema errors
-          explainValidationError(collectionName, { doc });
+          explainValidationError(db, collectionName, { doc });
           // Clean up MongoMock
           await mockCol.removeOne(...uoArgs);
         }
@@ -144,7 +149,7 @@ const explainSchemaErrors = (incomingDb) => {
             const doc = docs[i];
             doc._id = currentDoc._id;
             // Explain schema errors
-            explainValidationError(collectionName, { doc });
+            explainValidationError(db, collectionName, { doc });
           }
           // Clean up MongoMock
           await mockCol.removeMany(...umArgs);
@@ -159,7 +164,5 @@ const explainSchemaErrors = (incomingDb) => {
 
 module.exports = {
   explainSchemaErrors,
-  onError: (cb) => {
-    schemaErrorCallback = cb;
-  },
+  validationErrors,
 };

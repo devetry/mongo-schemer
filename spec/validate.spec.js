@@ -102,12 +102,12 @@ describe('Mongo Explain Validate Errors', () => {
   });
   it('explains insertOne validation error', async (done) => {
     const col = db.collection(collectionName);
-    MongoSchemer.onError((errors) => {
+    db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
       expect(errors[0].keyword).toBe('instanceof');
       expect(errors[0].dataPath).toBe('.created');
       done();
-    });
+    };
     try {
       await col.insertOne({
         name: 'test1',
@@ -126,14 +126,36 @@ describe('Mongo Explain Validate Errors', () => {
       }
     }
   });
+  it('does not fail when doc is valid', async (done) => {
+    const col = db.collection(collectionName);
+    db.onValidationError = () => {
+      done.fail('expected this doc to be valid');
+    };
+    try {
+      await col.insertOne({
+        name: 'test2',
+        type: 'second',
+        created: new Date(),
+        items: [
+          {
+            description: 'Second item',
+          },
+        ],
+      });
+    } catch (err) {
+      done.fail(err);
+    }
+    done();
+  });
+
   it('explains insertMany validation error', async (done) => {
     const col = db.collection(collectionName);
-    MongoSchemer.onError((errors) => {
+    db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
       expect(errors[0].keyword).toBe('additionalProperties');
       expect(errors[0].dataPath).toBe('.items[0]');
       done();
-    });
+    };
     try {
       await col.insertMany([
         {
@@ -167,12 +189,12 @@ describe('Mongo Explain Validate Errors', () => {
   });
   it('explains updateOne validation error', async (done) => {
     const col = db.collection(collectionName);
-    MongoSchemer.onError((errors) => {
+    db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
       expect(errors[0].keyword).toBe('instanceof');
       expect(errors[0].dataPath).toBe('.created');
       done();
-    });
+    };
     try {
       await col.updateOne({
         name: 'test1',
@@ -191,7 +213,7 @@ describe('Mongo Explain Validate Errors', () => {
   it('explains updateMany validation error', async (done) => {
     const col = db.collection(collectionName);
     let errorsReported = 0;
-    MongoSchemer.onError((errors) => {
+    db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
       expect(errors[0].keyword).toBe('instanceof');
       expect(errors[0].dataPath).toBe('.created');
@@ -199,7 +221,7 @@ describe('Mongo Explain Validate Errors', () => {
       if (errorsReported === 2) {
         done();
       }
-    });
+    };
     try {
       await col.updateMany({
         type: 'first',
