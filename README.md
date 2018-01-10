@@ -24,9 +24,8 @@ const MongoSchemer = require('mongo-schemer');
 MongoClient.connect(dbUrl).then((client) => {
   const db = client.db(dbName);
   if (process.env.DEV) {
-    db = MongoSchemer.explainSchemaErrors(db);
-    MongoSchemer.onError((errors) => {
-      console.log(errors);
+    db = MongoSchemer.explainSchemaErrors(db, {
+      onError: (errors) => { console.log(errors); },
     });
   }
 });
