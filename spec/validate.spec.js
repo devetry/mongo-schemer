@@ -1,14 +1,17 @@
+const _ = require('lodash');
+const $RefParser = require('json-schema-ref-parser');
 const { MongoClient } = require('mongodb');
-
+const pokemonSchema = require('./pokemonSchema');
 const MongoSchemer = require('../index.js');
 
 const dbUrl = `mongodb://localhost:${process.env.MONGO_PORT || 27017}/`;
 const dbName = 'mongo-schemer';
-const collectionName = 'test';
-let client;
-let db;
 
 describe('Mongo Explain Validate Errors', () => {
+  const collectionName = 'test';
+  let client;
+  let db;
+
   it('connects to Mongo', async (done) => {
     client = await MongoClient.connect(dbUrl);
     db = MongoSchemer.explainSchemaErrors(client.db(dbName));
@@ -103,9 +106,12 @@ describe('Mongo Explain Validate Errors', () => {
   it('explains insertOne validation error', async (done) => {
     const col = db.collection(collectionName);
     db.onValidationError = (errors) => {
-      expect(errors.length).toBe(1);
+      expect(errors.length).toBe(2);
       expect(errors[0].keyword).toBe('instanceof');
       expect(errors[0].dataPath).toBe('.created');
+      expect(errors[1].keyword).toBe('additionalProperties');
+      expect(errors[1].dataPath).toBe('.items[0]');
+
       done();
     };
     try {
@@ -231,6 +237,138 @@ describe('Mongo Explain Validate Errors', () => {
         },
       });
       done();
+    } catch (err) {
+      if (err.code !== 121) {
+        done.fail('Failed with non-validation error');
+      }
+    }
+  });
+  it('drops test database', async (done) => {
+    await db.dropDatabase();
+    done();
+  });
+});
+
+describe('Pokemon tests', () => {
+  const collectionName = 'pokemon';
+  let client;
+  let db;
+
+
+  it('connects to Mongo', async () => {
+    client = await MongoClient.connect(dbUrl);
+    db = MongoSchemer.explainSchemaErrors(client.db(dbName));
+  });
+
+  it('adds test validator', async () => {
+    // Create collection
+    const inlinedSchema = await $RefParser.dereference(pokemonSchema);
+    delete inlinedSchema.definitions;
+
+    await db.createCollection(collectionName, {
+      validator: { $jsonSchema: pokemonSchema },
+    });
+  });
+
+  it("doesn't add dragons", async (done) => {
+    const col = db.collection(collectionName);
+    db.onValidationError = (errors) => {
+      expect(_.map(errors, 'dataPath'))
+        .toEqual([
+          '.element[0]',
+          '.element[1]',
+          '.stats',
+          '',
+        ]);
+      done();
+    };
+    try {
+      await col.insertOne({
+        name: 'Norberta',
+        element: [
+          'Flying',
+          'Norwegian Ridge-back',
+        ],
+        stats: 'no thanks',
+      });
+    } catch (err) {
+      if (err.code !== 121) {
+        done.fail('Failed with non-validation error');
+      }
+    }
+  });
+
+  it('recognizes missing properties', async (done) => {
+    const col = db.collection(collectionName);
+    db.onValidationError = (errors) => {
+      expect(errors.length).toBe(1);
+      expect(errors[0].message).toEqual("should have required property 'misc'");
+      done();
+    };
+    try {
+      await col.insertOne({
+        id: '001',
+        name: 'Bulbasaur',
+        img: 'http://img.pokemondb.net/artwork/bulbasaur.jpg',
+        element: [
+          'Grass',
+          'Poison',
+        ],
+        stats: {
+          hp: 45,
+          attack: 49,
+          defense: 49,
+          spattack: 65,
+          spdefense: 65,
+          speed: 45,
+        },
+      });
+      done.fail('expected to fail with validation error');
+    } catch (err) {
+      if (err.code !== 121) {
+        done.fail('Failed with non-validation error');
+      }
+    }
+  });
+
+  it('reports on dereferenced definitions', async (done) => {
+    const col = db.collection(collectionName);
+    db.onValidationError = (errors) => {
+      expect(errors).toEqual([{
+        keyword: 'type',
+        dataPath: '.stats.attack',
+        schemaPath: '#/properties/stats/properties/attack/type',
+        params: { type: 'number' },
+        message: 'should be number',
+      }, {
+        keyword: 'type',
+        dataPath: '.stats.speed',
+        schemaPath: '#/properties/stats/properties/speed/type',
+        params: { type: 'number' },
+        message: 'should be number',
+      }]);
+      done();
+    };
+    try {
+      await col.insertOne({
+        id: '001',
+        name: 'Bulbasaur',
+        img: 'http://img.pokemondb.net/artwork/bulbasaur.jpg',
+        element: [
+          'Grass',
+          'Poison',
+        ],
+        stats: {
+          hp: 45,
+          attack: '49',
+          defense: 49,
+          spattack: 65,
+          spdefense: 65,
+          speed: '45',
+        },
+        misc: {},
+      });
+      done.fail('expected to fail with validation error');
     } catch (err) {
       if (err.code !== 121) {
         done.fail('Failed with non-validation error');
