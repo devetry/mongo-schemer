@@ -32,3 +32,7 @@ MongoClient.connect(dbUrl).then((client) => {
 ```
 
 Running in prod is not recommended due to the overhead of validating documents against the schema.
+
+## Caveats
+
+MongoDB does not currently support `definitions` in the JSON Schema. However, there is an easy workaround using `json-schema-ref-parser`. See https://brianschiller.com/blog/2018/01/30/pokemon-mongo-schemer for more information.
