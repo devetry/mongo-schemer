@@ -3,7 +3,7 @@ const Ajv = require('ajv');
 const AjvKeywords = require('ajv-keywords');
 const MongoMock = require('mongo-mock');
 
-const ajv = new Ajv();
+const ajv = new Ajv({ allErrors: true });
 AjvKeywords(ajv, 'instanceof');
 // add special test for { objectid: true } in schema
 ajv.addKeyword(
