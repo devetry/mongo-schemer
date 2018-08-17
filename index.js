@@ -10,18 +10,6 @@ const MongoMockUrl = 'mongodb://localhost:27017/mongo-schemer';
 
 MongoMock.max_delay = 0;
 
-const convertObjectIDsToStrings = (value) => {
-  // Check if this is an ObjectID
-  if (value.toHexString && value.getTimestamp) {
-    return value.toHexString();
-  } else if (_.isObject(value)) {
-    return _.mapValues(value, convertObjectIDsToStrings);
-  } else if (_.isArray(value)) {
-    return _.map(value, convertObjectIDsToStrings);
-  }
-  return value;
-};
-
 const validationErrors = async (db, collectionName, { doc, err }) => {
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
   const schema = collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema;
@@ -80,8 +68,6 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         if (err && err.code === 121) {
           // Get doc we're trying to update
           const currentDoc = await col.findOne(uoArgs[0]);
-          // Remove ObjectIDs from filters
-          uoArgs[0] = convertObjectIDsToStrings(uoArgs[0]);
           // Load current doc into mock mongo
           const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
           const mockCol = mockDb.collection('mock');
@@ -90,8 +76,6 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           await mockCol.updateOne(...uoArgs);
           // Get updated doc from mock mongo to compare against schema
           const doc = await mockCol.findOne(uoArgs[0]);
-          // mongo-mock changes how an _id looks, change it back
-          doc._id = currentDoc._id;
           // Explain schema errors
           explainValidationError(db, collectionName, { doc });
           // Clean up MongoMock
@@ -108,8 +92,6 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         if (err && err.code === 121) {
           // Get docs we're trying to update
           const currentDocs = await col.find(umArgs[0]).toArray();
-          // Remove ObjectIDs from filters
-          umArgs[0] = convertObjectIDsToStrings(umArgs[0]);
           // Load current docs into mock mongo
           const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
           const mockCol = mockDb.collection('mock');
@@ -118,11 +100,8 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           await mockCol.updateMany(...umArgs);
           // Get updated docs from mock mongo to compare against schema
           const docs = await mockCol.find(umArgs[0]).toArray();
-          // mongo-mock changes how an _id looks, change it back
           for (let i = 0, { length } = docs; i < length; i++) {
-            const currentDoc = currentDocs[i];
             const doc = docs[i];
-            doc._id = currentDoc._id;
             // Explain schema errors
             explainValidationError(db, collectionName, { doc });
           }
