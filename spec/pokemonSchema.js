@@ -1,22 +1,22 @@
 module.exports = {
-  type: 'object',
+  bsonType: 'object',
   definitions: {
     Stat: {
-      type: 'number',
+      bsonType: 'number',
       minimum: 0,
       maximum: 255,
     },
     Percent: {
-      type: 'number',
+      bsonType: 'number',
       minimum: 0,
       maximum: 100,
     },
   },
   properties: {
     element: {
-      type: 'array',
+      bsonType: 'array',
       items: {
-        type: 'string',
+        bsonType: 'string',
         enum: [
           // probably there are more, but maybe we've only seen
           // the starters so far!
@@ -28,7 +28,7 @@ module.exports = {
       },
     },
     stats: {
-      type: 'object',
+      bsonType: 'object',
       properties: {
         hp: { $ref: '#/definitions/Stat' },
         attack: { $ref: '#/definitions/Stat' },
@@ -40,17 +40,17 @@ module.exports = {
       additionalProperties: false,
     },
     misc: {
-      type: 'object',
+      bsonType: 'object',
       properties: {
         sex: {
-          type: 'object',
+          bsonType: 'object',
           properties: {
             male: { $ref: '#/definitions/Percent' },
             female: { $ref: '#/definitions/Percent' },
           },
           additionalProperties: false,
         },
-        classification: { type: 'string' },
+        classification: { bsonType: 'string' },
         // and some other properties...
       },
       additionalProperties: true,

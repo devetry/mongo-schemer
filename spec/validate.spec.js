@@ -107,7 +107,7 @@ describe('Mongo Explain Validate Errors', () => {
     const col = db.collection(collectionName);
     db.onValidationError = (errors) => {
       expect(errors.length).toBe(2);
-      expect(errors[0].keyword).toBe('instanceof');
+      expect(errors[0].keyword).toBe('bsonType');
       expect(errors[0].dataPath).toBe('.created');
       expect(errors[1].keyword).toBe('additionalProperties');
       expect(errors[1].dataPath).toBe('.items[0]');
@@ -197,7 +197,7 @@ describe('Mongo Explain Validate Errors', () => {
     const col = db.collection(collectionName);
     db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
-      expect(errors[0].keyword).toBe('instanceof');
+      expect(errors[0].keyword).toBe('bsonType');
       expect(errors[0].dataPath).toBe('.created');
       done();
     };
@@ -221,7 +221,7 @@ describe('Mongo Explain Validate Errors', () => {
     let errorsReported = 0;
     db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
-      expect(errors[0].keyword).toBe('instanceof');
+      expect(errors[0].keyword).toBe('bsonType');
       expect(errors[0].dataPath).toBe('.created');
       errorsReported += 1;
       if (errorsReported === 2) {
@@ -335,16 +335,16 @@ describe('Pokemon tests', () => {
     const col = db.collection(collectionName);
     db.onValidationError = (errors) => {
       expect(errors).toEqual([{
-        keyword: 'type',
+        keyword: 'bsonType',
         dataPath: '.stats.attack',
-        schemaPath: '#/properties/stats/properties/attack/type',
-        params: { type: 'number' },
+        schemaPath: '#/properties/stats/properties/attack/bsonType',
+        params: { bsonType: 'number' },
         message: 'should be number',
       }, {
-        keyword: 'type',
+        keyword: 'bsonType',
         dataPath: '.stats.speed',
-        schemaPath: '#/properties/stats/properties/speed/type',
-        params: { type: 'number' },
+        schemaPath: '#/properties/stats/properties/speed/bsonType',
+        params: { bsonType: 'number' },
         message: 'should be number',
       }]);
       done();

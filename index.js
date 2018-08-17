@@ -1,17 +1,10 @@
 const _ = require('lodash');
 const Ajv = require('ajv');
-const AjvKeywords = require('ajv-keywords');
+const AjvBsonType = require('ajv-bsontype');
 const MongoMock = require('mongo-mock');
 
 const ajv = new Ajv({ allErrors: true });
-AjvKeywords(ajv, 'instanceof');
-// add special test for { objectid: true } in schema
-ajv.addKeyword(
-  'objectid',
-  // eslint-disable-next-line
-  { validate: (schema, data) => data._bsontype === 'ObjectID' },
-);
-
+AjvBsonType(ajv);
 
 const MongoMockUrl = 'mongodb://localhost:27017/mongo-schemer';
 
@@ -29,36 +22,9 @@ const convertObjectIDsToStrings = (value) => {
   return value;
 };
 
-const convertMongoSchemaToJsonSchema = (incomingSchema) => {
-  const schema = incomingSchema;
-  if (schema.bsonType && !schema.type) {
-    schema.type = schema.bsonType;
-    delete schema.bsonType;
-  }
-  if (schema.type === 'objectId') {
-    delete schema.type;
-    schema.objectid = true;
-  }
-  if (schema.type === 'date') {
-    delete schema.type;
-    schema.instanceof = 'Date';
-  }
-  if (schema.type === 'object') {
-    // The first param passed by _.forOwn is 'value', which is what we expect in convertMongoSchemaToJsonSchema
-    _.forOwn(schema.properties, convertMongoSchemaToJsonSchema);
-  }
-  if (schema.type === 'array') {
-    convertMongoSchemaToJsonSchema(schema.items);
-  }
-  if (schema.anyOf) {
-    schema.anyOf.map(convertMongoSchemaToJsonSchema);
-  }
-  return schema;
-};
-
 const validationErrors = async (db, collectionName, { doc, err }) => {
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
-  const schema = convertMongoSchemaToJsonSchema(collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema);
+  const schema = collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema;
   if (!doc && err) {
     doc = err.getOperation(); // eslint-disable-line no-param-reassign
   }
