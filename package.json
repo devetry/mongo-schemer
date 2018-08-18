@@ -40,7 +40,7 @@
     "ajv": "^6.0.0",
     "ajv-bsontype": "^1.0.4",
     "lodash": "^4.17.4",
-    "mongo-mock": "^2.8.0",
+    "mongo-mock": "^3.3.0",
     "mongodb": "^3.0.1"
   }
 }
