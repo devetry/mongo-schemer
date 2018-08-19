@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const Ajv = require('ajv');
 const AjvBsonType = require('ajv-bsontype');
 const MongoMock = require('mongo-mock');
