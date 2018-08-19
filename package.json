@@ -33,9 +33,9 @@
     "eslint-plugin-react": "^7.5.1",
     "jasmine": "^2.8.0",
     "jasmine-core": "^2.8.0",
-    "jasmine-node": "^1.14.5",
+    "jasmine-node": "^2.0.1",
     "json-schema-ref-parser": "^4.1.0",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.10"
   },
   "dependencies": {
     "ajv": "^6.0.0",
