@@ -35,7 +35,7 @@
     "jasmine-core": "^2.8.0",
     "jasmine-node": "^2.0.1",
     "json-schema-ref-parser": "^4.1.0",
-    "lodash": "^4.17.10"
+    "lodash": "^4.17.11"
   },
   "dependencies": {
     "ajv": "^6.0.0",
