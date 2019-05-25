@@ -12,7 +12,7 @@ MongoMock.max_delay = 0;
 const validationErrors = async (db, collectionName, { doc, err }) => {
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
   const schema = collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema;
-  if (!doc) {
+  if (!doc && err) {
     doc = (`op` in err) ? err.op : err.getOperation(); // eslint-disable-line no-param-reassign
   }
   const valid = ajv.validate(schema, doc);
