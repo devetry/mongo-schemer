@@ -339,13 +339,13 @@ describe('Pokemon tests', () => {
         dataPath: '.stats.attack',
         schemaPath: '#/properties/stats/properties/attack/bsonType',
         params: { bsonType: 'number' },
-        message: 'should be number',
+        message: 'should be number got 49',
       }, {
         keyword: 'bsonType',
         dataPath: '.stats.speed',
         schemaPath: '#/properties/stats/properties/speed/bsonType',
         params: { bsonType: 'number' },
-        message: 'should be number',
+        message: 'should be number got 45',
       }]);
       done();
     };
