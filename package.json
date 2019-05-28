@@ -1,6 +1,6 @@
 {
   "name": "mongo-schemer",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Detailed schema validation error messages for Mongo",
   "main": "index.js",
   "scripts": {
