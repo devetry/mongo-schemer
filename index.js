@@ -39,6 +39,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
     const originalInsertMany = col.insertMany;
     const originalUpdateOne = col.updateOne;
     const originalUpdateMany = col.updateMany;
+    const originalfindOneAndUpdate = col.findOneAndUpdate;
     col.insertOne = async function replacementInsertOne(...ioArgs) {
       try {
         return await originalInsertOne.call(this, ...ioArgs);
@@ -106,6 +107,30 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           }
           // Clean up MongoMock
           await mockCol.removeMany(...umArgs);
+        }
+        throw err;
+      }
+    };
+    col.findOneAndUpdate = async function replacementfindOneAndUpdate(...uoArgsIncoming) {
+      const uoArgs = uoArgsIncoming;
+      try {
+        return await originalfindOneAndUpdate.call(this, ...uoArgs);
+      } catch (err) {
+        if (err && err.code === 121) {
+          // Get doc we're trying to update
+          const currentDoc = await col.findOne(uoArgs[0]);
+          // Load current doc into mock mongo
+          const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
+          const mockCol = mockDb.collection('mock');
+          await mockCol.insertOne(currentDoc);
+          // Apply updates to our mock version of the current doc
+          await mockCol.findOneAndUpdate(...uoArgs);
+          // Get updated doc from mock mongo to compare against schema
+          const doc = await mockCol.findOne(uoArgs[0]);
+          // Explain schema errors
+          explainValidationError(db, collectionName, { doc });
+          // Clean up MongoMock
+          await mockCol.removeOne(...uoArgs);
         }
         throw err;
       }
