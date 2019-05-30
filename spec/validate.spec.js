@@ -203,7 +203,7 @@ describe('Mongo Explain Validate Errors', () => {
           params: { bsonType: 'string' },
           message: 'should be string got Earth,Electricity',
           dataPath: '.type',
-          schemaPath: '#/properties/type/bsonType'
+          schemaPath: '#/properties/type/bsonType',
         },
       ]);
       done();
