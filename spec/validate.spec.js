@@ -193,6 +193,37 @@ describe('Mongo Explain Validate Errors', () => {
       }
     }
   });
+
+  it('explains findOneAndUpdate validation error', async (done) => {
+    const col = db.collection(collectionName);
+    db.onValidationError = (errors) => {
+      expect(errors).toEqual([
+        {
+          keyword: 'bsonType',
+          params: { bsonType: 'string' },
+          message: 'should be string got Earth,Electricity',
+          dataPath: '.type',
+          schemaPath: '#/properties/type/bsonType'
+        },
+      ]);
+      done();
+    };
+    try {
+      await col.findOneAndUpdate({
+        name: 'test1',
+      }, {
+        $set: {
+          type: ['Earth', 'Electricity'],
+        },
+      });
+      done();
+    } catch (err) {
+      if (err.code !== 121) {
+        done.fail('Failed with non-validation error');
+      }
+    }
+  });
+
   it('explains updateOne validation error', async (done) => {
     const col = db.collection(collectionName);
     db.onValidationError = (errors) => {
