@@ -27,7 +27,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
   }
   const explainValidationErrorLogic = async (...args) => {
     const { valid, errors } = await validationErrors(...args);
-    if (!valid) {
+    if (!valid && db.onValidationError) {
       db.onValidationError(errors);
     }
     return errors;
