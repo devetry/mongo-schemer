@@ -21,15 +21,21 @@ const validationErrors = async (db, collectionName, { doc, err }) => {
 
 const explainSchemaErrors = (incomingDb, options = {}) => {
   const db = incomingDb;
-  const { onError } = options;
+  const { onError, includeValidationInError } = options;
   if (onError) {
     db.onValidationError = onError;
   }
-  const explainValidationError = async (...args) => {
+  const explainValidationErrorLogic = async (...args) => {
     const { valid, errors } = await validationErrors(...args);
-    if (!valid) {
+    if (!valid && db.onValidationError) {
       db.onValidationError(errors);
     }
+    return errors;
+  };
+  // If returning validation errors, wait for them
+  const explainValidationError = async (...args) => {
+    if (includeValidationInError) return explainValidationErrorLogic(...args);
+    else explainValidationErrorLogic(...args);
   };
   const originalCollection = db.collection;
   db.collection = function replacementCollection(...args) {
@@ -45,7 +51,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         return await originalInsertOne.call(this, ...ioArgs);
       } catch (err) {
         if (err && err.code === 121) {
-          explainValidationError(db, collectionName, { doc: ioArgs[0] });
+          err.validationErrors = await explainValidationError(db, collectionName, { doc: ioArgs[0] });
         }
         throw err;
       }
@@ -55,7 +61,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         return await originalInsertMany.call(this, ...imArgs);
       } catch (err) {
         if (err && err.code === 121) {
-          explainValidationError(db, collectionName, { err });
+          err.validationErrors = await explainValidationError(db, collectionName, { err });
         }
         throw err;
       }
@@ -77,7 +83,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           // Get updated doc from mock mongo to compare against schema
           const doc = await mockCol.findOne(uoArgs[0]);
           // Explain schema errors
-          explainValidationError(db, collectionName, { doc });
+          err.validationErrors = await explainValidationError(db, collectionName, { doc });
           // Clean up MongoMock
           await mockCol.removeOne(...uoArgs);
         }
@@ -103,7 +109,8 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           for (let i = 0, { length } = docs; i < length; i++) {
             const doc = docs[i];
             // Explain schema errors
-            explainValidationError(db, collectionName, { doc });
+            const validationErrorsArr = await explainValidationError(db, collectionName, { doc });
+            err.validationErrors = (err.validationErrors) ? [...err.validationErrors, ...validationErrorsArr] : validationErrorsArr;
           }
           // Clean up MongoMock
           await mockCol.removeMany(...umArgs);
@@ -128,7 +135,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           // Get updated doc from mock mongo to compare against schema
           const doc = await mockCol.findOne(uoArgs[0]);
           // Explain schema errors
-          explainValidationError(db, collectionName, { doc });
+          err.validationErrors = await explainValidationError(db, collectionName, { doc });
           // Clean up MongoMock
           await mockCol.removeOne(...uoArgs);
         }
