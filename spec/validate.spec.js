@@ -274,6 +274,35 @@ describe('Mongo Explain Validate Errors', () => {
       }
     }
   });
+  it('connects to Mongo with Mongo Schemer options', async (done) => {
+    client = await MongoClient.connect(dbUrl);
+    db = MongoSchemer.explainSchemaErrors(client.db(dbName), { includeValidationInError: true });
+    done();
+  });
+  it('returns validation error result', async (done) => {
+    const col = db.collection(collectionName);
+    try {
+      await col.insertOne({
+        name: 'test1',
+        type: 'first',
+        created: 'this should be a date instead',
+        items: [
+          {
+            description: 'First item',
+            extraFieldThatDoesNotExist: true,
+          },
+        ],
+      });
+    } catch (err) {
+      expect(err.validationErrors.length).toBe(2);
+      expect(err.validationErrors[0].keyword).toBe('bsonType');
+      expect(err.validationErrors[0].dataPath).toBe('.created');
+      expect(err.validationErrors[1].keyword).toBe('additionalProperties');
+      expect(err.validationErrors[1].dataPath).toBe('.items[0]');
+      return done();
+    }
+    done.fail('Validation errors not included in thrown error');
+  });
   it('drops test database', async (done) => {
     await db.dropDatabase();
     done();
