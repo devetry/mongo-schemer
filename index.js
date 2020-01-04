@@ -34,7 +34,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
   };
   // If returning validation errors, wait for them
   const explainValidationError = (...args) => {
-    const explanationP = explainValidationErrorLogic(...args);;
+    const explanationP = explainValidationErrorLogic(...args);
     if (includeValidationInError) return explanationP;
     return Promise.resolve(null);
   };
@@ -107,12 +107,8 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           await mockCol.updateMany(...umArgs);
           // Get updated docs from mock mongo to compare against schema
           const docs = await mockCol.find(umArgs[0]).toArray();
-          for (let i = 0, { length } = docs; i < length; i++) {
-            const doc = docs[i];
-            // Explain schema errors
-            const validationErrorsArr = await explainValidationError(db, collectionName, { doc });
-            err.validationErrors = (err.validationErrors) ? [...err.validationErrors, ...validationErrorsArr] : validationErrorsArr;
-          }
+          const errorLists = await Promise.all(docs.map(doc => explainValidationError(db, collectionName, { doc })));
+          err.validationErrors = [].concat(...errorLists);
           // Clean up MongoMock
           await mockCol.removeMany(...umArgs);
         }

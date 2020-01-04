@@ -302,6 +302,7 @@ describe('Mongo Explain Validate Errors', () => {
       return done();
     }
     done.fail('Validation errors not included in thrown error');
+    return null;
   });
   it('drops test database', async (done) => {
     await db.dropDatabase();
