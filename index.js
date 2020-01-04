@@ -33,9 +33,10 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
     return errors;
   };
   // If returning validation errors, wait for them
-  const explainValidationError = async (...args) => {
-    if (includeValidationInError) return explainValidationErrorLogic(...args);
-    else explainValidationErrorLogic(...args);
+  const explainValidationError = (...args) => {
+    const explanationP = explainValidationErrorLogic(...args);;
+    if (includeValidationInError) return explanationP;
+    return Promise.resolve(null);
   };
   const originalCollection = db.collection;
   db.collection = function replacementCollection(...args) {
