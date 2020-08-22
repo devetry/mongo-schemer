@@ -87,6 +87,8 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           err.validationErrors = await explainValidationError(db, collectionName, { doc });
           // Clean up MongoMock
           await mockCol.removeOne(...uoArgs);
+          // close MongoMock DB connection
+          mockDb.close();
         }
         throw err;
       }
@@ -111,6 +113,8 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           err.validationErrors = [].concat(...errorLists);
           // Clean up MongoMock
           await mockCol.removeMany(...umArgs);
+          // close MongoMock DB connection
+          mockDb.close();
         }
         throw err;
       }
@@ -135,6 +139,8 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
           err.validationErrors = await explainValidationError(db, collectionName, { doc });
           // Clean up MongoMock
           await mockCol.removeOne(...uoArgs);
+          // close MongoMock DB connection
+          mockDb.close();
         }
         throw err;
       }
