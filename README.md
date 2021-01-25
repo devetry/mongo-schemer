@@ -26,11 +26,43 @@ MongoClient.connect(dbUrl).then((client) => {
   if (process.env.DEV) {
     db = MongoSchemer.explainSchemaErrors(db, {
       onError: (errors) => { console.log(errors); },
+      includeValidationInError: true,
     });
   }
 });
 ```
+**Options**  
+`onError` allows the enhanced validation errors to be dealt with within its callback. Optional.
 
+`includeValidationInError` includes the enhanced validation errors within the original MongoDB error under the key `validationErrors`. This allows the error to be handled at any point in its callstack. Optional.
+
+**Example Error**  
+If using the `onError` callback only the `validationErrors` array is provided:
+```
+{
+  message: "Document failed validation",
+  ..., // original error details
+  validationErrors: [
+    {
+      message: 'should be date got this should be a date instead',
+      keyword: 'bsonType',
+      params: { bsonType: 'date' },
+      dataPath: '.created',
+      schemaPath: '#/properties/created/bsonType'
+    },
+    {
+      message: 'should NOT have additional properties',
+      keyword: 'additionalProperties',
+      params: { additionalProperty: 'extraFieldThatDoesNotExist' },
+      dataPath: '.items[0]',
+      schemaPath: '#/properties/items/items/additionalProperties'
+    }
+  ]
+}
+```
+See tests for more details.
+
+**Production Usage**  
 Running in prod is not recommended due to the overhead of validating documents against the schema.
 
 ## Caveats
