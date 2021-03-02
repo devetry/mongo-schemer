@@ -247,55 +247,6 @@ describe('Mongo Explain Validate Errors', () => {
       }
     }
   });
-
-  it('does not explain updateOne validation error due to doc also being created within transaction', async (done) => {
-    let session;
-    const col = db.collection(collectionName);
-
-    try {
-      session = client.startSession();
-      session.startTransaction();
-      await col.insertOne({
-        name: 'testUpdateOneTransaction',
-        type: 'first',
-        created: new Date(),
-        items: [
-          {
-            description: 'First item',
-          },
-        ],
-      }, {
-        session,
-      });
-    } catch (err) {
-      done.fail('Failed with non-validation error');
-    }
-
-
-    db.onValidationError = (errors) => {
-      expect(errors.length).toBe(1);
-      expect(errors[0].keyword).toBe('bsonType');
-      expect(errors[0].dataPath).toBe('.created');
-      done();
-    };
-    try {
-      await col.updateOne({
-        name: 'testUpdateOneTransaction',
-      }, {
-        $set: {
-          created: 'this should be a date instead',
-        },
-      }, {
-        session,
-      });
-      done();
-    } catch (err) {
-      if (err.code !== 121) {
-        done.fail('Failed with non-validation error');
-      }
-    }
-  });
-
   it('explains updateMany validation error', async (done) => {
     const col = db.collection(collectionName);
     let errorsReported = 0;
