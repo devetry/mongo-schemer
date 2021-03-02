@@ -75,20 +75,24 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         if (err && err.code === 121) {
           // Get doc we're trying to update
           const currentDoc = await col.findOne(uoArgs[0]);
-          // Load current doc into mock mongo
-          const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
-          const mockCol = mockDb.collection('mock');
-          await mockCol.insertOne(currentDoc);
-          // Apply updates to our mock version of the current doc
-          await mockCol.updateOne(...uoArgs);
-          // Get updated doc from mock mongo to compare against schema
-          const doc = await mockCol.findOne(uoArgs[0]);
-          // Explain schema errors
-          err.validationErrors = await explainValidationError(db, collectionName, { doc });
-          // Clean up MongoMock
-          await mockCol.removeOne(...uoArgs);
-          // close MongoMock DB connection
-          mockDb.close();
+          // If doc created & updated in same MongoDB transaction enhanced validation details cannot be provided as
+          // validation errors roll back transactions leaving us with no knowledge of the originally created valid doc
+          if (currentDoc) {
+            // Load current doc into mock mongo
+            const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
+            const mockCol = mockDb.collection('mock');
+            await mockCol.insertOne(currentDoc);
+            // Apply updates to our mock version of the current doc
+            await mockCol.updateOne(...uoArgs);
+            // Get updated doc from mock mongo to compare against schema
+            const doc = await mockCol.findOne(uoArgs[0]);
+            // Explain schema errors
+            err.validationErrors = await explainValidationError(db, collectionName, { doc });
+            // Clean up MongoMock
+            await mockCol.removeOne(...uoArgs);
+            // close MongoMock DB connection
+            mockDb.close();
+          }
         }
         throw err;
       }
@@ -101,20 +105,24 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         if (err && err.code === 121) {
           // Get docs we're trying to update
           const currentDocs = await col.find(umArgs[0]).toArray();
-          // Load current docs into mock mongo
-          const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
-          const mockCol = mockDb.collection('mock');
-          await mockCol.insertMany(currentDocs);
-          // Apply updates to our mock version of the current docs
-          await mockCol.updateMany(...umArgs);
-          // Get updated docs from mock mongo to compare against schema
-          const docs = await mockCol.find(umArgs[0]).toArray();
-          const errorLists = await Promise.all(docs.map(doc => explainValidationError(db, collectionName, { doc })));
-          err.validationErrors = [].concat(...errorLists);
-          // Clean up MongoMock
-          await mockCol.removeMany(...umArgs);
-          // close MongoMock DB connection
-          mockDb.close();
+          // If all docs created & updated in same MongoDB transaction enhanced validation details cannot be provided as
+          // validation errors roll back transactions leaving us with no knowledge of the originally created valid docs
+          if (currentDocs.length > 0) {
+            // Load current docs into mock mongo
+            const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
+            const mockCol = mockDb.collection('mock');
+            await mockCol.insertMany(currentDocs);
+            // Apply updates to our mock version of the current docs
+            await mockCol.updateMany(...umArgs);
+            // Get updated docs from mock mongo to compare against schema
+            const docs = await mockCol.find(umArgs[0]).toArray();
+            const errorLists = await Promise.all(docs.map(doc => explainValidationError(db, collectionName, { doc })));
+            err.validationErrors = [].concat(...errorLists);
+            // Clean up MongoMock
+            await mockCol.removeMany(...umArgs);
+            // close MongoMock DB connection
+            mockDb.close();
+          }
         }
         throw err;
       }
@@ -127,20 +135,24 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         if (err && err.code === 121) {
           // Get doc we're trying to update
           const currentDoc = await col.findOne(uoArgs[0]);
-          // Load current doc into mock mongo
-          const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
-          const mockCol = mockDb.collection('mock');
-          await mockCol.insertOne(currentDoc);
-          // Apply updates to our mock version of the current doc
-          await mockCol.findOneAndUpdate(...uoArgs);
-          // Get updated doc from mock mongo to compare against schema
-          const doc = await mockCol.findOne(uoArgs[0]);
-          // Explain schema errors
-          err.validationErrors = await explainValidationError(db, collectionName, { doc });
-          // Clean up MongoMock
-          await mockCol.removeOne(...uoArgs);
-          // close MongoMock DB connection
-          mockDb.close();
+          // If doc created & updated in same MongoDB transaction enhanced validation details cannot be provided as
+          // validation errors roll back transactions leaving us with no knowledge of the originally created valid doc
+          if (currentDoc) {
+            // Load current doc into mock mongo
+            const mockDb = await MongoMock.MongoClient.connect(MongoMockUrl);
+            const mockCol = mockDb.collection('mock');
+            await mockCol.insertOne(currentDoc);
+            // Apply updates to our mock version of the current doc
+            await mockCol.findOneAndUpdate(...uoArgs);
+            // Get updated doc from mock mongo to compare against schema
+            const doc = await mockCol.findOne(uoArgs[0]);
+            // Explain schema errors
+            err.validationErrors = await explainValidationError(db, collectionName, { doc });
+            // Clean up MongoMock
+            await mockCol.removeOne(...uoArgs);
+            // close MongoMock DB connection
+            mockDb.close();
+          }
         }
         throw err;
       }
