@@ -40,6 +40,11 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
   };
   const originalCollection = db.collection;
   db.collection = function replacementCollection(...args) {
+
+
+
+
+    
     const collectionName = args[0];
     const col = originalCollection.call(this, ...args);
     const originalInsertOne = col.insertOne;
