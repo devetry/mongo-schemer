@@ -13,7 +13,8 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
-      - run: npm lint
+      - run: npm i
+      - run: npm run lint
   test:
     runs-on: ubuntu-latest
     steps:
@@ -26,4 +27,5 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
+      - run: npm i
       - run: npm test
