@@ -252,7 +252,7 @@ describe('Mongo Explain Validate Errors', () => {
     let errorsReported = 0;
     db.onValidationError = (errors) => {
       expect(errors.length).toBe(1);
-      expect(errors[0].keyword).toBe('bsonTypeasdfsd');
+      expect(errors[0].keyword).toBe('bsonType');
       expect(errors[0].dataPath).toBe('.created');
       errorsReported += 1;
       if (errorsReported === 2) {
