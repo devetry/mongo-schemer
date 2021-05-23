@@ -8,7 +8,7 @@
     "test": "./node_modules/jasmine/bin/jasmine.js spec/*.spec.js"
   },
   "engines": {
-    "node": "^8.0.0"
+    "node": ">=8.0.0"
   },
   "author": "Allan Wintersieck",
   "contributors": [
@@ -33,9 +33,9 @@
     "eslint-plugin-react": "^7.5.1",
     "jasmine": "^2.8.0",
     "jasmine-core": "^2.8.0",
-    "jasmine-node": "^2.0.1",
+    "jasmine-node": "^3.0.0",
     "json-schema-ref-parser": "^4.1.0",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.21"
   },
   "dependencies": {
     "ajv": "^6.0.0",
