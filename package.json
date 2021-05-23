@@ -41,6 +41,6 @@
     "ajv": "^6.0.0",
     "ajv-bsontype": "^1.0.7",
     "mongo-mock": "^3.3.0",
-    "mongodb": "^3.4.1"
+    "mongodb": "^3.6.8"
   }
 }
