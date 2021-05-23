@@ -9,12 +9,24 @@ const MongoMockUrl = 'mongodb://localhost:27017/mongo-schemer';
 
 MongoMock.max_delay = 0;
 
-const validationErrors = async (db, collectionName, { doc, err }) => {
+const extraDocFromErrors = (err) => {
+  // mongo 3.4.1
+  if ('op' in err) {
+    return err.op;
+  }
+
+  // mongo 3.6.8
+  if (err.writeErrors) {
+    return err.writeErrors[0].err.op;
+  }
+
+  return err.getOperation();
+};
+
+const validationErrors = async (db, collectionName, { doc }) => {
   const collectionInfo = await db.command({ listCollections: 1, filter: { name: collectionName } });
   const schema = collectionInfo.cursor.firstBatch[0].options.validator.$jsonSchema;
-  if (!doc && err) {
-    doc = ('op' in err) ? err.op : err.getOperation(); // eslint-disable-line no-param-reassign
-  }
+
   const valid = ajv.validate(schema, doc);
   return { valid, errors: ajv.errors };
 };
@@ -62,7 +74,7 @@ const explainSchemaErrors = (incomingDb, options = {}) => {
         return await originalInsertMany.call(this, ...imArgs);
       } catch (err) {
         if (err && err.code === 121) {
-          err.validationErrors = await explainValidationError(db, collectionName, { err });
+          err.validationErrors = await explainValidationError(db, collectionName, { doc: extraDocFromErrors(err) });
         }
         throw err;
       }
